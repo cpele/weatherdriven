@@ -2,11 +2,10 @@
 	     (srfi srfi-19)
 	     (ice-9 threads))
 
-;; Define web server handler
 (define (handle-req request request-body start-date)
   (values
      '((content-type . (text/plain)))
-     (string-append "Server start: " start-date ". Hi 🤓")))
+     (string-append "Server start: " start-date ". Hello world 🤓")))
 
 (define (current-date-time-str)
   (date->string (current-date) "~Y~m~d-~H~M~S"))
@@ -14,14 +13,6 @@
 (define-once server-thread #f)
 (define-once server-socket #f)
 
-;; Start-server function:
-;; - Skip when server-thread is defined 
-;; - Create socket (inet, stream)
-;; - Set socket options: SOL_SOCKET? SO_REUSEADDR? 1?
-;; - Bind socket with family AF_INET, address INADDR_ANY and port 8080
-;; - Make socket listen with a backlog of 128
-;; - Execute run-server using the server socket in a new thread
-;; - Keep the thread in the server-thread var
 (define (start-server)
   (unless server-socket
     (display "Setting up server socket...\n")
@@ -43,13 +34,6 @@
 		`(#:socket ,server-socket))))))
     (display "Server thread set up\n")))
 
-;; Stop-server function:
-;; - Check for existing server socket
-;; - Close the server socket
-;; - Clear the server-socket variable
-;; - Check for existing server thread
-;; - Join the server thread to let the server loop exit
-;; - Clear the server-thread var
 (define (stop-server)
   (when server-socket
     (display "Closing server socket...\n")
@@ -63,12 +47,10 @@
     (display "Server thread terminated\n")
     (set! server-thread #f)))
 
-;; Restart-server function: stop then start
 (define (restart-server)
   (stop-server)
   (start-server))
 
-;; Use restart-server function
 (restart-server)
 
 
