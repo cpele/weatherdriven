@@ -3,21 +3,16 @@
 	     (ice-9 threads))
 
 ;; Define web server handler
-(define (handle-req request request-body)
+(define (handle-req request request-body start-date)
   (values
      '((content-type . (text/plain)))
-     "Yo 🙏"))
+     (string-append "Server start: " start-date ". Hi 🤓")))
 
 (define (current-date-time-str)
-  (date->string (current-date) "~Y~m~d-~H~M~S: "))
+  (date->string (current-date) "~Y~m~d-~H~M~S"))
 
-(display (string-append
-	  (current-date-time-str)
-	  "Starting server\n"))
-
-;; Define empty (undefined?) server thread & socket vars
-(define server-thread #f)
-(define server-socket #f)
+(define-once server-thread #f)
+(define-once server-socket #f)
 
 ;; Start-server function:
 ;; - Skip when server-thread is defined 
@@ -37,14 +32,15 @@
     (display "Server socket set up\n"))
   (unless server-thread
     (display "Setting up server thread...\n")
-    (set! server-thread
-	  (call-with-new-thread
-	   (lambda ()
-	     (run-server
-	      (lambda (request request-body)
-		(handle-req request request-body))
-	      'http
-	      `(#:socket ,server-socket)))))
+    (let [(start-date-str (current-date-time-str))]
+      (set! server-thread
+	    (call-with-new-thread
+	     (lambda ()
+	       (run-server
+		(lambda (request request-body)
+		  (handle-req request request-body start-date-str))
+		'http
+		`(#:socket ,server-socket))))))
     (display "Server thread set up\n")))
 
 ;; Stop-server function:
@@ -68,15 +64,13 @@
     (set! server-thread #f)))
 
 ;; Restart-server function: stop then start
-;; TBD
+(define (restart-server)
+  (stop-server)
+  (start-server))
 
 ;; Use restart-server function
-;; TBD
+(restart-server)
 
-;; (define server-thread
-;;   (call-with-new-thread
-;;    (lambda ()
-;;      (run-server handle-req))))
 
 
 
