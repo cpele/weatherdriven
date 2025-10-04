@@ -1,11 +1,15 @@
 (use-modules (web server)
 	     (srfi srfi-19)
-	     (ice-9 threads))
+	     (ice-9 threads)
+	     (json))
 
-(define (handle-req request request-body start-date)
+(define-json-type <view>
+  (started))
+
+(define (handle-req request body start-date-str)
   (values
-     '((content-type . (text/plain)))
-     (string-append "Server start: " start-date ". Hello world 🤓")))
+     '((content-type . (application/json)))
+     (view->json (make-view start-date-str))))
 
 (define (current-date-time-str)
   (date->string (current-date) "~Y~m~d-~H~M~S"))
@@ -28,8 +32,8 @@
 	    (call-with-new-thread
 	     (lambda ()
 	       (run-server
-		(lambda (request request-body)
-		  (handle-req request request-body start-date-str))
+		(lambda (request body)
+		  (handle-req request body start-date-str))
 		'http
 		`(#:socket ,server-socket))))))
     (display "Server thread set up\n")))
