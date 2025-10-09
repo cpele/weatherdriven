@@ -13,17 +13,17 @@
   (title)
   (date))
 
-(define l list)
+(define _ list)
 
 (define (init)
-  (l #:title "Today's weather"
+  (_ #:title "Today's weather"
      #:date (current-date)
      #:forecast
-     (l #:hi
-	(l #:text "Yo"
+     (_ #:hi
+        (_ #:text "Yo"
 	   #:temp-deg 18)
 	#:lo
-	(l #:text "Hey"
+	(_ #:text "Hey"
 	   #:temp-deg 19))))
 
 (define (view model)
@@ -41,8 +41,8 @@
 
 (define (handle-req request body model)
   (values
-     '((content-type . (application/json)))
-     (view model)))
+   '((content-type . (application/json)))
+   (view model)))
 
 (define (current-date-time-str)
   (date->string (current-date) "~Y~m~d-~H~M~S"))
@@ -69,7 +69,7 @@
 		  (handle-req request body model))
 		'http
 		`(#:socket ,server-socket)))))))
-    (logd "Server thread set up"))
+  (logd "Server thread set up"))
 
 (define (stop-server)
   (when server-socket
