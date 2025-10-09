@@ -1,15 +1,48 @@
 (use-modules (web server)
 	     (srfi srfi-19)
 	     (ice-9 threads)
+	     (ice-9 optargs)
 	     (json))
 
-(define-json-type <view>
-  (server-started))
+(define (logd message)
+  (display (string-append "[" (current-date-time-str) "] " message "\n")))
 
-(define (handle-req request body start-date-str)
+;; MVU program
+
+(define-json-type <ui-model>
+  (title)
+  (date))
+
+(define l list)
+
+(define (init)
+  (l #:title "Today's weather"
+     #:date (current-date)
+     #:forecast
+     (l #:hi
+	(l #:text "Yo"
+	   #:temp-deg 18)
+	#:lo
+	(l #:text "Hey"
+	   #:temp-deg 19))))
+
+(define (view model)
+  (let-keywords
+   model #t
+   ((title "")
+    (date (current-date)))
+   (display (string-append "Title: " title))
+   (ui-model->json (scm->ui-model
+		    `(("title" . ,title)
+		      ("date" . ,(date->string date)))))))
+
+;; Runtime
+
+
+(define (handle-req request body model)
   (values
      '((content-type . (application/json)))
-     (view->json (make-view start-date-str))))
+     (view model)))
 
 (define (current-date-time-str)
   (date->string (current-date) "~Y~m~d-~H~M~S"))
@@ -19,36 +52,36 @@
 
 (define (start-server)
   (unless server-socket
-    (display "Setting up server socket... ")
+    (logd "Setting up server socket... ")
     (set! server-socket (socket AF_INET SOCK_STREAM 0))
     (setsockopt server-socket SOL_SOCKET SO_REUSEADDR 1)
     (bind server-socket AF_INET INADDR_LOOPBACK 8080)
     (listen server-socket 128)
-    (display "Server socket set up\n"))
+    (logd "Server socket set up"))
   (unless server-thread
-    (display "Setting up server thread... ")
-    (let [(start-date-str (current-date-time-str))]
+    (logd "Setting up server thread... ")
+    (let [(model (init))]
       (set! server-thread
 	    (call-with-new-thread
 	     (lambda ()
 	       (run-server
 		(lambda (request body)
-		  (handle-req request body start-date-str))
+		  (handle-req request body model))
 		'http
-		`(#:socket ,server-socket))))))
-    (display "Server thread set up\n")))
+		`(#:socket ,server-socket)))))))
+    (logd "Server thread set up"))
 
 (define (stop-server)
   (when server-socket
-    (display "Closing server socket... ")
+    (logd "Closing server socket... ")
     (close server-socket)
-    (display "Socket closed\n")
+    (logd "Socket closed")
     (set! server-socket #f))
   (when server-thread
-    (display "Waiting for server thread to terminate... ")
+    (logd "Waiting for server thread to terminate... ")
     (cancel-thread server-thread)
     (join-thread server-thread)
-    (display "Server thread terminated\n")
+    (logd "Server thread terminated")
     (set! server-thread #f)))
 
 (define (restart-server)
