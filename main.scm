@@ -21,10 +21,10 @@
      #:forecast
      (_ #:hi
         (_ #:text "Yo"
-	   #:temp-deg 18)
-	#:lo
-	(_ #:text "Hey"
-	   #:temp-deg 19))))
+           #:temp-deg 18)
+        #:lo
+        (_ #:text "Hey"
+           #:temp-deg 19))))
 
 (define (view model)
   (let-keywords
