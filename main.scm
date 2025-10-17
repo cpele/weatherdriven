@@ -1,4 +1,5 @@
 (use-modules (web server)
+             (web response)
 	     (srfi srfi-19)
 	     (ice-9 threads)
 	     (ice-9 optargs)
@@ -9,39 +10,22 @@
 
 ;; MVU program
 
-(define-json-type <ui-model>
-  (title)
-  (date))
-
-(define _ list)
-
 (define (init)
-  (_ #:title "Today's weather"
-     #:date (current-date)
-     #:forecast
-     (_ #:hi
-        (_ #:text "Yo"
-           #:temp-deg 18)
-        #:lo
-        (_ #:text "Hey"
-           #:temp-deg 19))))
+  `((title . "Today's weather")
+    (date . ,(date->string (current-date)))
+    (forecast . ((hi . ((text . "Yo")
+                        (temp-deg . 18)))
+                 (lo . ((text . "Hey")
+                        (temp-deg . 10)))))))
 
 (define (view model)
-  (let-keywords
-   model #t
-   ((title "")
-    (date (current-date)))
-   (display (string-append "Title: " title))
-   (ui-model->json (scm->ui-model
-		    `(("title" . ,title)
-		      ("date" . ,(date->string date)))))))
+  (scm->json-string model))
 
 ;; Runtime
 
-
 (define (handle-req request body model)
   (values
-   '((content-type . (application/json)))
+   '[(content-type . (application/json))]
    (view model)))
 
 (define (current-date-time-str)
@@ -87,6 +71,9 @@
 (define (restart-server)
   (stop-server)
   (start-server))
+
+(current-warning-port (current-error-port))
+(current-error-port (current-output-port))
 
 (restart-server)
 
