@@ -48,7 +48,7 @@
       (set! server-thread
 	    (call-with-new-thread
 	     (lambda ()
-	       (run-server
+               (run-server
 		(lambda (request body)
 		  (handle-req request body model))
 		'http
@@ -71,9 +71,6 @@
 (define (restart-server)
   (stop-server)
   (start-server))
-
-(current-warning-port (current-error-port))
-(current-error-port (current-output-port))
 
 (restart-server)
 
