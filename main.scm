@@ -3,10 +3,15 @@
 	     (srfi srfi-19)
 	     (ice-9 threads)
 	     (ice-9 optargs)
+             (ice-9 exceptions)
+             (ice-9 format)
 	     (json))
 
 (define (logd message)
-  (display (string-append "[" (current-date-time-str) "] " message "\n")))
+  (display
+   (string-append
+    "[" (current-date-time-str) "] " message "\n"))
+  (flush-all-ports))
 
 ;; MVU program
 
@@ -24,9 +29,15 @@
 ;; Runtime
 
 (define (handle-req request body model)
-  (values
-   '[(content-type . (application/json))]
-   (view model)))
+  (catch #t
+    (lambda ()
+      (values
+       '[(content-type . (application/json))]
+       (view model)))
+    (lambda (exn . args)
+      (values
+       '[(content-type . (text/plain))]
+       (format #f "Error handling request: ~a\n" exn)))))
 
 (define (current-date-time-str)
   (date->string (current-date) "~Y~m~d-~H~M~S"))
@@ -44,15 +55,31 @@
     (logd "Server socket set up"))
   (unless server-thread
     (logd "Setting up server thread... ")
-    (let [(model (init))]
-      (set! server-thread
-	    (call-with-new-thread
-	     (lambda ()
-               (run-server
-		(lambda (request body)
-		  (handle-req request body model))
-		'http
-		`(#:socket ,server-socket)))))))
+    (set! server-thread
+	  (call-with-new-thread 
+	   (lambda ()
+             ;; (set-current-output-port (open-output-file "server-output.log"))
+             ;; (set-current-error-port (open-output-file "server-error.log"))
+             (with-exception-handler
+                 (lambda (exception)
+                   (format (current-error-port)
+                           "Error starting server: ~a\n"
+                           exception)
+                   (force-output (current-error-port))
+                   (exit 1))
+               (lambda ()
+                 (dynamic-wind
+                   (lambda ()
+                     (logd "(Before running server)"))
+                   (lambda ()
+                     (let [(model (init))]
+                       (run-server
+		        (lambda (request body)
+                          (handle-req request body model))
+		        'http
+		        `(#:socket ,server-socket))))
+                   (lambda ()
+                     (logd "(After running server)")))))))))
   (logd "Server thread set up"))
 
 (define (stop-server)
@@ -72,7 +99,7 @@
   (stop-server)
   (start-server))
 
-(restart-server)
+;; (restart-server)
 
 
 
