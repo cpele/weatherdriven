@@ -16,12 +16,17 @@
 ;; MVU program
 
 (define (init)
-  `((title . "Today's weather")
-    (date . ,(date->string (current-date)))
-    (forecast . ((hi . ((text . "Yo")
-                        (temp-deg . 18)))
-                 (lo . ((text . "Hey")
-                        (temp-deg . 10)))))))
+  `((model . ((title . "Today's weather")
+              (date . ,(date->string (current-date)))
+              (forecast . ((hi . ((text . "Yo")
+                                  (temp-deg . 18)))
+                           (lo . ((text . "Hey")
+                                  (temp-deg . 10)))))))
+    (effects . ((lambda ()
+                  (fetch))))))
+
+(define (fetch)
+  (display "TBD: Fetch"))
 
 (define (view model)
   (scm->json-string model))
@@ -58,8 +63,6 @@
     (set! server-thread
 	  (call-with-new-thread 
 	   (lambda ()
-             ;; (set-current-output-port (open-output-file "server-output.log"))
-             ;; (set-current-error-port (open-output-file "server-error.log"))
              (with-exception-handler
                  (lambda (exception)
                    (format (current-error-port)
@@ -72,7 +75,10 @@
                    (lambda ()
                      (logd "(Before running server)"))
                    (lambda ()
-                     (let [(model (init))]
+                     (let* [(change (init))
+                            (model (assoc-ref change 'model))
+                            (effects (assoc-ref change 'effects))]
+                       (logd (format #f "Effects: ~a" effects))
                        (run-server
 		        (lambda (request body)
                           (handle-req request body model))
@@ -99,7 +105,7 @@
   (stop-server)
   (start-server))
 
-;; (restart-server)
+(restart-server)
 
 
 
