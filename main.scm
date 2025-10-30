@@ -16,17 +16,22 @@
 ;; MVU program
 
 (define (init)
-  `((model . ((title . "Today's weather")
-              (date . ,(date->string (current-date)))
-              (forecast . ((hi . ((text . "Yo")
-                                  (temp-deg . 18)))
-                           (lo . ((text . "Hey")
-                                  (temp-deg . 10)))))))
-    (effects . ((lambda ()
-                  (fetch))))))
+  `((model
+     . ((title . "Today's weather")
+        (date . ,(date->string (current-date)))
+        (forecast
+         . ((hi
+             . ((text . null)
+                (temp-deg . null)))
+            (lo
+             . ((text . null)
+                (temp-deg . null)))))))
+    (effect . fetch)))
 
-(define (fetch)
-  (display "TBD: Fetch"))
+(define effects
+  `((fetch . ,(lambda (dispatch)
+                (logd "TBD: Fetch")
+                (dispatch "'TBD: Message'")))))
 
 (define (view model)
   (scm->json-string model))
@@ -41,7 +46,7 @@
        (view model)))
     (lambda (exn . args)
       (values
-       '[(content-type . (text/plain))]
+       '((content-type . (text/plain)))
        (format #f "Error handling request: ~a\n" exn)))))
 
 (define (current-date-time-str)
@@ -75,10 +80,15 @@
                    (lambda ()
                      (logd "(Before running server)"))
                    (lambda ()
+                     (logd (format #f "Effects: ~a" effects))
                      (let* [(change (init))
                             (model (assoc-ref change 'model))
-                            (effects (assoc-ref change 'effects))]
-                       (logd (format #f "Effects: ~a" effects))
+                            (effect-id (assoc-ref change 'effect))
+                            (effect (assoc-ref effects effect-id))
+                            (_ (logd (format #f "Effect: ~a" effect)))]
+                       (logd (format #f "Calling effect"))
+                       (effect (lambda (msg)
+                                 (logd (format #f "To do: Dispatch ~a" msg))))
                        (run-server
 		        (lambda (request body)
                           (handle-req request body model))
@@ -105,7 +115,7 @@
   (stop-server)
   (start-server))
 
-(restart-server)
+;; (restart-server)
 
 
 
