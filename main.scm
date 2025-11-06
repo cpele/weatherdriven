@@ -5,7 +5,7 @@
 	     (ice-9 optargs)
              (ice-9 exceptions)
              (ice-9 format)
-	     (json))
+             (cpele weatherdriven app))
 
 (define (logd message)
   (display
@@ -13,28 +13,10 @@
     "[" (current-date-time-str) "] " message "\n"))
   (flush-all-ports))
 
-;; MVU program
-
-(define (init)
-  `((model
-     . ((title . "Today's weather")
-        (date . ,(date->string (current-date)))
-        (forecast
-         . ((hi
-             . ((text . null)
-                (temp-deg . null)))
-            (lo
-             . ((text . null)
-                (temp-deg . null)))))))
-    (effect . fetch)))
-
 (define effects
   `((fetch . ,(lambda (dispatch)
                 (logd "TBD: Fetch")
                 (dispatch "'TBD: Message'")))))
-
-(define (view model)
-  (scm->json-string model))
 
 ;; Runtime
 
